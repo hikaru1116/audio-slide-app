@@ -132,7 +132,7 @@ cd frontend
 
 # 環境変数設定ファイル作成
 cat > .env.production << EOF
-REACT_APP_API_BASE_URL=http://audio-slide-alb-76204901.ap-northeast-1.elb.amazonaws.com/
+REACT_APP_API_BASE_URL=http://audio-slide-app-alb-1362309403.ap-northeast-1.elb.amazonaws.com/
 EOF
 
 docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_FRONTEND_REPO:$APP_VERSION .
