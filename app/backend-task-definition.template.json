@@ -1,0 +1,39 @@
+{
+    "family": "audio-slide-backend",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "runtimePlatform": {
+        "cpuArchitecture": "ARM64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "cpu": "256",
+    "memory": "512",
+    "executionRoleArn": "arn:aws:iam::$AWS_ACCOUNT_ID:role/ecsTaskExecutionRole",
+    "taskRoleArn": "arn:aws:iam::$AWS_ACCOUNT_ID:role/ecsTaskRole",
+    "containerDefinitions": [
+        {
+            "name": "audio-slide-backend",
+            "image": "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_BACKEND_REPO:$APP_VERSION",
+            "portMappings": [
+                {
+                    "containerPort": 8080,
+                    "protocol": "tcp"
+                }
+            ],
+            "environment": [
+                { "name": "AWS_REGION", "value": "$AWS_REGION" },
+                { "name": "PORT", "value": "8080" },
+                { "name": "S3_BUCKET_NAME", "value": "$S3_BUCKET_NAME" },
+                { "name": "S3_REGION", "value": "$AWS_REGION" }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/audio-slide-backend",
+                    "awslogs-region": "$AWS_REGION",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ]
+}

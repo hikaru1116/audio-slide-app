@@ -1,0 +1,32 @@
+{
+    "family": "audio-slide-frontend",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "runtimePlatform": {
+        "cpuArchitecture": "ARM64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "cpu": "256",
+    "memory": "512",
+    "executionRoleArn": "arn:aws:iam::440153297829:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+        {
+            "name": "audio-slide-frontend",
+            "image": "440153297829.dkr.ecr.ap-northeast-1.amazonaws.com/audio-slide-frontend:0.5",
+            "portMappings": [
+                {
+                    "containerPort": 80,
+                    "protocol": "tcp"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/audio-slide-frontend",
+                    "awslogs-region": "ap-northeast-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ]
+}

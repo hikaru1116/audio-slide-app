@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: system-ui, sans-serif;
+}
+
+/* カスタムアニメーション */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+}
+
+@keyframes correctAnswer {
+  0% {
+    transform: scale(1);
+    background-color: white;
+  }
+  50% {
+    transform: scale(1.1);
+    background-color: #dcfce7;
+  }
+  100% {
+    transform: scale(1);
+    background-color: white;
+  }
+}
+
+@keyframes incorrectAnswer {
+  0% {
+    transform: scale(1);
+    background-color: white;
+  }
+  50% {
+    transform: scale(1.05);
+    background-color: #fef2f2;
+  }
+  100% {
+    transform: scale(1);
+    background-color: white;
+  }
+}
+
+.slide-enter {
+  animation: slideIn 0.3s ease-out;
+}
+
+.slide-exit {
+  animation: slideOut 0.3s ease-out;
+}
+
+.correct-animation {
+  animation: correctAnswer 0.6s ease-out;
+}
+
+.incorrect-animation {
+  animation: incorrectAnswer 0.6s ease-out;
+}

@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npm create:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss init:*)",
+      "Bash(go mod:*)",
+      "Bash(go:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(rm -rf /Users/hirose.hikaru/github/audio-slide-app/app/frontend/node_modules /Users/hirose.hikaru/github/audio-slide-app/app/frontend/package-lock.json)",
+      "Bash(rm:*)",
+      "Bash(curl:*)",
+      "Bash(chmod:*)",
+      "Bash(pkill:*)",
+      "Bash(npm test)",
+      "Bash(docker-compose:*)",
+      "Bash(npm test:*)",
+      "Bash(touch:*)",
+      "Bash(curl:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker run:*)",
+      "Bash(docker logs:*)",
+      "Bash(timeout:*)",
+      "Bash(docker build:*)",
+      "Bash(npm run test:*)",
+      "Bash(true)",
+      "Bash(docker logs:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker compose:*)",
+      "Bash(lsof:*)",
+      "Bash(REACT_APP_API_BASE_URL=test123 node test-env.js)",
+      "Bash(rm:*)",
+      "Bash(REACT_APP_API_BASE_URL=http://custom-api.test npm run build)",
+      "Bash(grep:*)"
+    ],
+    "deny": []
+  }
+}

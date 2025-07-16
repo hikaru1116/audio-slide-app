@@ -1,0 +1,405 @@
+openapi: 3.1.0
+info:
+  title: 音声スライド学習アプリ API
+  description: |
+    音声スライド学習WebアプリケーションのバックエンドAPI仕様です。
+    このAPIは、国旗、動物、言葉等のカテゴリに基づいた学習コンテンツを提供し、
+    画像、テキスト、音声を組み合わせた学習体験を支援します。
+  version: 1.0.0
+  contact:
+    name: 音声スライド学習アプリ開発チーム
+    url: https://github.com/audio-slide-app
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.audio-slide-app.com
+    description: 本番環境
+  - url: http://localhost:8080
+    description: 開発環境
+
+paths:
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: ヘルスチェック
+      description: APIサーバーの稼働状況を確認
+      operationId: getHealth
+      responses:
+        "200":
+          description: サーバーが正常に稼働中
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "500":
+          description: 内部サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/categories:
+    get:
+      tags:
+        - Categories
+      summary: カテゴリ一覧取得
+      description: 利用可能な学習カテゴリの一覧を取得
+      operationId: getCategories
+      responses:
+        "200":
+          description: カテゴリ一覧を正常に取得
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        "500":
+          description: 内部サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/quiz:
+    get:
+      tags:
+        - Quiz
+      summary: クイズ問題取得
+      description: 指定されたカテゴリのクイズ問題を取得
+      operationId: getQuizzes
+      parameters:
+        - name: category
+          in: query
+          required: true
+          description: カテゴリID（flags, animals, words）
+          schema:
+            type: string
+            enum: [flags, animals, words]
+        - name: count
+          in: query
+          required: false
+          description: 取得する問題数（デフォルト 10, 最大 50）
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        "200":
+          description: クイズ問題を正常に取得
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quiz"
+        "400":
+          description: リクエストパラメータエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_category:
+                  summary: 無効なカテゴリ
+                  value:
+                    error:
+                      code: EC001
+                      message: 無効なカテゴリが指定されました
+                      details: "category: 'invalid_category' is not supported"
+        "500":
+          description: 内部サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/quiz/{id}:
+    get:
+      tags:
+        - Quiz
+      summary: 個別クイズ問題取得
+      description: 指定されたIDの個別クイズ問題を取得
+      operationId: getQuizById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: クイズID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: クイズ問題を正常に取得
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizDetail"
+        "404":
+          description: リソースが見つからない
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                not_found:
+                  summary: クイズが見つからない
+                  value:
+                    error:
+                      code: EC002
+                      message: 指定されたクイズが見つかりません
+                      details: "quiz_id: 'invalid_quiz_id' not found"
+        "500":
+          description: 内部サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          description: サーバーの状態
+          example: ok
+        timestamp:
+          type: string
+          format: date-time
+          description: レスポンス生成時刻
+          example: 2024-01-15T10:30:00Z
+
+    Category:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - thumbnail
+      properties:
+        id:
+          type: string
+          description: カテゴリID
+          enum: [flags, animals, words]
+          example: flags
+        name:
+          type: string
+          description: カテゴリ名
+          example: 国旗
+        description:
+          type: string
+          description: カテゴリの説明
+          example: 世界各国の国旗を学習
+        thumbnail:
+          type: string
+          format: uri
+          description: サムネイル画像URL
+          example: https://cdn.example.com/thumbnails/flags.jpg
+
+    Quiz:
+      type: object
+      required:
+        - id
+        - questionImageUrl
+        - questionAudioUrl
+        - correctAnswer
+        - choices
+        - category
+        - explanation
+      properties:
+        id:
+          type: string
+          description: クイズID
+          example: quiz_flag_001
+        questionImageUrl:
+          type: string
+          format: uri
+          description: 問題画像URL
+          example: https://cdn.example.com/flags/italy.svg
+        questionAudioUrl:
+          type: string
+          format: uri
+          description: 問題音声URL
+          example: https://cdn.example.com/audio/italy.mp3
+        correctAnswer:
+          type: string
+          description: 正解の選択肢
+          example: イタリア
+        choices:
+          type: array
+          description: 選択肢のリスト
+          items:
+            type: string
+          example:
+            - イタリア
+            - フランス
+            - ドイツ
+            - スペイン
+        category:
+          type: string
+          description: カテゴリ
+          enum: [flags, animals, words]
+          example: flags
+        explanation:
+          type: string
+          description: 解説
+          example: イタリアの国旗は緑、白、赤の三色旗です。
+
+    QuizDetail:
+      allOf:
+        - $ref: "#/components/schemas/Quiz"
+        - type: object
+          required:
+            - createdAt
+            - updatedAt
+          properties:
+            createdAt:
+              type: string
+              format: date-time
+              description: 作成日時
+              example: 2024-01-15T10:30:00Z
+            updatedAt:
+              type: string
+              format: date-time
+              description: 更新日時
+              example: 2024-01-15T10:30:00Z
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: エラーコード
+              example: EC001
+            message:
+              type: string
+              description: エラーメッセージ
+              example: リクエストパラメータエラー
+            details:
+              type: string
+              description: 詳細な情報（オプション）
+              example: category parameter is required
+
+  parameters:
+    CategoryParam:
+      name: category
+      in: query
+      required: true
+      description: カテゴリID
+      schema:
+        type: string
+        enum: [flags, animals, words]
+
+    CountParam:
+      name: count
+      in: query
+      required: false
+      description: 取得する問題数
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+
+    QuizIdParam:
+      name: id
+      in: path
+      required: true
+      description: クイズID
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: リクエストパラメータエラー
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    NotFound:
+      description: リソースが見つからない
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    InternalServerError:
+      description: 内部サーバーエラー
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  examples:
+    FlagsQuiz:
+      summary: 国旗クイズの例
+      value:
+        id: quiz_flag_001
+        questionImageUrl: https://cdn.example.com/flags/italy.svg
+        questionAudioUrl: https://cdn.example.com/audio/italy.mp3
+        correctAnswer: イタリア
+        choices:
+          - イタリア
+          - フランス
+          - ドイツ
+          - スペイン
+        category: flags
+        explanation: イタリアの国旗は緑、白、赤の三色旗です。
+
+    AnimalsQuiz:
+      summary: 動物クイズの例
+      value:
+        id: quiz_animal_001
+        questionImageUrl: https://cdn.example.com/animals/lion.jpg
+        questionAudioUrl: https://cdn.example.com/audio/lion.mp3
+        correctAnswer: ライオン
+        choices:
+          - ライオン
+          - トラ
+          - ヒョウ
+          - チーター
+        category: animals
+        explanation: ライオンは百獣の王と呼ばれる大型の肉食動物です。
+
+    WordsQuiz:
+      summary: 言葉クイズの例
+      value:
+        id: quiz_word_001
+        questionImageUrl: https://cdn.example.com/words/apple.jpg
+        questionAudioUrl: https://cdn.example.com/audio/apple.mp3
+        correctAnswer: りんご
+        choices:
+          - りんご
+          - みかん
+          - ぶどう
+          - いちご
+        category: words
+        explanation: りんごは赤い果物で、英語でappleと言います。
+
+tags:
+  - name: Health
+    description: ヘルスチェック関連
+  - name: Categories
+    description: カテゴリ管理
+  - name: Quiz
+    description: クイズ問題管理
+
+externalDocs:
+  description: プロジェクトドキュメント
+  url: https://github.com/audio-slide-app/docs
