@@ -51,6 +51,7 @@ jobs:
         uses: dorny/paths-filter@v2
         id: changes
         with:
+          base: HEAD~1 # 直前のコミットと比較
           filters: |
             backend:
               - 'app/backend/**'
