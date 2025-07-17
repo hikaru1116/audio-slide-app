@@ -47,7 +47,7 @@ resource "aws_ecs_task_definition" "backend" {
   container_definitions = jsonencode([
     {
       name  = "${var.project_name}-backend"
-      image = "${aws_ecr_repository.backend.repository_url}:${var.app_version}"
+      image = "${aws_ecr_repository.backend.repository_url}:latest"  # GitHub Actionsでコミットハッシュに更新される
       portMappings = [
         {
           containerPort = 8080
@@ -107,7 +107,7 @@ resource "aws_ecs_task_definition" "frontend" {
   container_definitions = jsonencode([
     {
       name  = "${var.project_name}-frontend"
-      image = "${aws_ecr_repository.frontend.repository_url}:${var.app_version}"
+      image = "${aws_ecr_repository.frontend.repository_url}:latest"  # GitHub Actionsでコミットハッシュに更新される
       portMappings = [
         {
           containerPort = 80
