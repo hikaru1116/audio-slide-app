@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAppContext } from '../context/AppContext';
-import { getCategories } from '../services/api';
-import type { Category } from '../types';
-import Header from '../components/Header';
-import CategoryCard from '../components/CategoryCard';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppContext } from "../context/AppContext";
+import { getCategories } from "../services/api";
+import type { Category } from "../types";
+import Header from "../components/Header";
+import CategoryCard from "../components/CategoryCard";
 
 const CategorySelectPage: React.FC = () => {
   const navigate = useNavigate();
@@ -18,13 +18,17 @@ const CategorySelectPage: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         // バックエンド API からカテゴリ一覧を取得
         const fetchedCategories = await getCategories();
         setCategories(fetchedCategories);
       } catch (err) {
-        console.error('カテゴリの取得に失敗しました:', err);
-        setError(err instanceof Error ? err.message : 'カテゴリの取得に失敗しました。再度お試しください。');
+        console.error("カテゴリの取得に失敗しました:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "カテゴリの取得に失敗しました。再度お試しください。"
+        );
       } finally {
         setIsLoading(false);
       }
@@ -34,7 +38,7 @@ const CategorySelectPage: React.FC = () => {
   }, []);
 
   const handleCategorySelect = (category: Category) => {
-    dispatch({ type: 'SET_CATEGORY', payload: category.id });
+    dispatch({ type: "SET_CATEGORY", payload: category.id });
     navigate(`/quiz/${category.id}`);
   };
 
@@ -75,11 +79,11 @@ const CategorySelectPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      
+
       <main className="flex-1 container mx-auto px-4 py-8 md:py-12 flex flex-col justify-center">
         <div className="text-center mb-12 md:mb-16">
           <h1 className="text-5xl md:text-6xl font-bold text-text mb-6">
-            🎯 音声スライド学習
+            🎯 パネル学習
           </h1>
           <p className="text-2xl md:text-3xl text-textSecondary">
             学習したいカテゴリを選択してください
