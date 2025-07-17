@@ -41,7 +41,7 @@ func (h *QuizHandler) GetQuizzes(c *gin.Context) {
 
 	quizzes, err := h.quizUseCase.GetQuizzesByCategory(c.Request.Context(), category, count)
 	if err != nil {
-		fmt.Println("GetQuizzesByCategoryError: ", err)
+		fmt.Println(fmt.Errorf("GetQuizzesByCategoryError: %w", err))
 		HandleError(c, err)
 		return
 	}
