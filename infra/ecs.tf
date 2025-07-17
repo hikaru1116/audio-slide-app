@@ -41,7 +41,7 @@ resource "aws_ecs_task_definition" "backend" {
   # ランタイムプラットフォーム設定
   runtime_platform {
     operating_system_family = "LINUX"  # Linux OSを使用
-    cpu_architecture        = "ARM64"  # ARM64アーキテクチャ（Graviton2コスト最適化）
+    cpu_architecture        = "X86_64"  # x86_64アーキテクチャ（汎用的な互換性）
   }
 
   container_definitions = jsonencode([
@@ -101,7 +101,7 @@ resource "aws_ecs_task_definition" "frontend" {
   # ランタイムプラットフォーム設定
   runtime_platform {
     operating_system_family = "LINUX"  # Linux OSを使用
-    cpu_architecture        = "ARM64"  # ARM64アーキテクチャ（Graviton2コスト最適化）
+    cpu_architecture        = "X86_64"  # x86_64アーキテクチャ（汎用的な互換性）
   }
 
   container_definitions = jsonencode([
