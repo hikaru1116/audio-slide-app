@@ -13,7 +13,6 @@ on:
     branches: [develop] # developブランチへのプッシュ時
   pull_request:
     branches: [develop] # developブランチへのプルリクエスト時
-    types: [opened] # PR作成時のみ実行
     paths: # app/backendに変更がある場合のみ実行
       - "app/backend/**"
       - ".github/workflows/ci.yml"
@@ -29,18 +28,6 @@ jobs:
   # Go/Ginアプリケーションのテストを実行
   backend-test:
     runs-on: ubuntu-latest
-
-    # DynamoDB Localサービスを起動
-    services:
-      dynamodb-local:
-        image: amazon/dynamodb-local:latest
-        ports:
-          - 8000:8000
-        options: >-
-          --health-cmd "curl -f http://localhost:8000 || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 3
 
     steps:
       - name: Checkout code
@@ -67,10 +54,5 @@ jobs:
 
       - name: Run tests
         working-directory: ./app/backend
-        env:
-          DYNAMODB_ENDPOINT: http://localhost:8000
-          AWS_REGION: ap-northeast-1
-          AWS_ACCESS_KEY_ID: dummy
-          AWS_SECRET_ACCESS_KEY: dummy
         run: |
           go test -v ./...

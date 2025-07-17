@@ -11,11 +11,11 @@ name: CD - Deploy to ECS
 # ワークフロー実行トリガー
 on:
   push:
-    branches: [ main ]  # mainブランチへのプッシュ時
-    paths:              # app/backend または app/frontend に変更がある場合のみ実行
-      - 'app/backend/**'
-      - 'app/frontend/**'
-      - '.github/workflows/cd.yml'
+    branches: [main] # mainブランチへのプッシュ時
+    paths: # app/backend または app/frontend に変更がある場合のみ実行
+      - "app/backend/**"
+      - "app/frontend/**"
+      - ".github/workflows/cd.yml"
 
 # 環境変数
 env:
@@ -148,12 +148,12 @@ jobs:
         run: |
           # フロントエンドイメージのビルド（コミットハッシュタグのみ）
           cd app/frontend
-          
+
           # 本番用環境変数ファイル作成
           cat > .env.production << EOF
           REACT_APP_API_BASE_URL=/api
           EOF
-          
+
           docker build --platform linux/arm64 -t $ECR_REGISTRY/$ECR_FRONTEND_REPO:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_FRONTEND_REPO:$IMAGE_TAG
           echo "✅ Pushed frontend image with tag: $IMAGE_TAG"
@@ -190,7 +190,7 @@ jobs:
   notify-deployment:
     runs-on: ubuntu-latest
     needs: [detect-changes, deploy-backend, deploy-frontend]
-    if: always()  # 前のジョブが失敗しても実行
+    if: always() # 前のジョブが失敗しても実行
 
     steps:
       - name: Notify success
