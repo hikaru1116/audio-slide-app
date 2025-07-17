@@ -1,0 +1,58 @@
+# ==================================================
+# CI Workflow - Audio Slide App
+# ==================================================
+# developブランチにマージされた際に実行されるCI（継続的インテグレーション）
+# - バックエンド（Go）のテストのみを実行
+# - app/backend に変更がある場合のみ実行
+
+name: CI - Backend Test on Develop
+
+# ワークフロー実行トリガー
+on:
+  push:
+    branches: [develop] # developブランチへのプッシュ時
+  pull_request:
+    branches: [develop] # developブランチへのプルリクエスト時
+    paths: # app/backendに変更がある場合のみ実行
+      - "app/backend/**"
+      - ".github/workflows/ci.yml"
+
+# 環境変数
+env:
+  GO_VERSION: "1.22"
+
+jobs:
+  # ==================================================
+  # バックエンドテストジョブ
+  # ==================================================
+  # Go/Ginアプリケーションのテストを実行
+  backend-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('app/backend/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install dependencies
+        working-directory: ./app/backend
+        run: go mod download
+
+      - name: Run tests
+        working-directory: ./app/backend
+        run: |
+          go test -v ./...

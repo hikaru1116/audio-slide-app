@@ -1,0 +1,213 @@
+# ==================================================
+# CD Workflow - Audio Slide App
+# ==================================================
+# mainブランチにマージされた際に実行されるCD（継続的デプロイ）
+# - Docker イメージをビルドしてECRにプッシュ
+# - ECSサービスをデプロイ
+# - コミットハッシュをイメージタグとして使用
+
+name: CD - Deploy to ECS
+
+# ワークフロー実行トリガー
+on:
+  push:
+    branches: [main] # mainブランチへのプッシュ時
+    paths: # app/backend または app/frontend に変更がある場合のみ実行
+      - "app/backend/**"
+      - "app/frontend/**"
+      - ".github/workflows/cd.yml"
+
+# 環境変数
+env:
+  AWS_REGION: ap-northeast-1
+  ECR_BACKEND_REPO: audio-slide-backend
+  ECR_FRONTEND_REPO: audio-slide-frontend
+  ECS_CLUSTER: audio-slide-cluster
+  ECS_BACKEND_SERVICE: audio-slide-app-backend-service
+  ECS_FRONTEND_SERVICE: audio-slide-app-frontend-service
+  ECS_BACKEND_TASK_DEFINITION: audio-slide-app-backend
+  ECS_FRONTEND_TASK_DEFINITION: audio-slide-app-frontend
+
+jobs:
+  # ==================================================
+  # 変更検知ジョブ
+  # ==================================================
+  # どのコンポーネントに変更があったかを検出
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend-changed: ${{ steps.changes.outputs.backend }}
+      frontend-changed: ${{ steps.changes.outputs.frontend }}
+      commit-hash: ${{ steps.commit.outputs.hash }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get commit hash
+        id: commit
+        run: echo "hash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Detect changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'app/backend/**'
+            frontend:
+              - 'app/frontend/**'
+
+  # ==================================================
+  # バックエンドデプロイジョブ
+  # ==================================================
+  # Go/Gin アプリケーションをECRにプッシュしてECSデプロイ
+  deploy-backend:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend-changed == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ needs.detect-changes.outputs.commit-hash }}
+        run: |
+          # バックエンドイメージのビルド（コミットハッシュタグのみ）
+          cd app/backend
+          docker build --platform linux/arm64 -t $ECR_REGISTRY/$ECR_BACKEND_REPO:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_BACKEND_REPO:$IMAGE_TAG
+          echo "✅ Pushed backend image with tag: $IMAGE_TAG"
+
+      - name: Download current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition $ECS_BACKEND_TASK_DEFINITION \
+            --query taskDefinition > task-definition.json
+
+      - name: Update task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ needs.detect-changes.outputs.commit-hash }}
+        with:
+          task-definition: task-definition.json
+          container-name: audio-slide-app-backend
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_BACKEND_REPO }}:${{ needs.detect-changes.outputs.commit-hash }}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_BACKEND_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+  # ==================================================
+  # フロントエンドデプロイジョブ
+  # ==================================================
+  # React アプリケーションをECRにプッシュしてECSデプロイ
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend-changed == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ needs.detect-changes.outputs.commit-hash }}
+        run: |
+          # フロントエンドイメージのビルド（コミットハッシュタグのみ）
+          cd app/frontend
+
+          # 本番用環境変数ファイル作成
+          cat > .env.production << EOF
+          REACT_APP_API_BASE_URL=/api
+          EOF
+
+          docker build --platform linux/arm64 -t $ECR_REGISTRY/$ECR_FRONTEND_REPO:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_FRONTEND_REPO:$IMAGE_TAG
+          echo "✅ Pushed frontend image with tag: $IMAGE_TAG"
+
+      - name: Download current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition $ECS_FRONTEND_TASK_DEFINITION \
+            --query taskDefinition > task-definition.json
+
+      - name: Update task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ needs.detect-changes.outputs.commit-hash }}
+        with:
+          task-definition: task-definition.json
+          container-name: audio-slide-app-frontend
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_FRONTEND_REPO }}:${{ needs.detect-changes.outputs.commit-hash }}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_FRONTEND_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+  # ==================================================
+  # デプロイ通知ジョブ
+  # ==================================================
+  # デプロイ結果を通知
+  notify-deployment:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, deploy-backend, deploy-frontend]
+    if: always() # 前のジョブが失敗しても実行
+
+    steps:
+      - name: Notify success
+        if: |
+          (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') &&
+          (needs.deploy-frontend.result == 'success' || needs.deploy-frontend.result == 'skipped')
+        run: |
+          echo "✅ Deployment completed successfully!"
+          echo "Commit: ${{ needs.detect-changes.outputs.commit-hash }}"
+          echo "Backend: ${{ needs.deploy-backend.result }}"
+          echo "Frontend: ${{ needs.deploy-frontend.result }}"
+
+      - name: Notify failure
+        if: needs.deploy-backend.result == 'failure' || needs.deploy-frontend.result == 'failure'
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Commit: ${{ needs.detect-changes.outputs.commit-hash }}"
+          echo "Backend: ${{ needs.deploy-backend.result }}"
+          echo "Frontend: ${{ needs.deploy-frontend.result }}"
+          exit 1
