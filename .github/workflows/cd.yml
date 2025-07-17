@@ -50,15 +50,27 @@ jobs:
         run: echo "hash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Detect changes
-        uses: dorny/paths-filter@v2
         id: changes
-        with:
-          base: HEAD~1  # 直前のコミットと比較
-          filters: |
-            backend:
-              - 'app/backend/**'
-            frontend:
-              - 'app/frontend/**'
+        run: |
+          # HEAD~1と比較して変更を検出
+          if git diff --name-only HEAD~1 HEAD | grep -q "^app/backend/"; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "✅ Backend changes detected"
+          else
+            echo "backend=false" >> $GITHUB_OUTPUT
+            echo "❌ No backend changes detected"
+          fi
+          
+          if git diff --name-only HEAD~1 HEAD | grep -q "^app/frontend/"; then
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "✅ Frontend changes detected"
+          else
+            echo "frontend=false" >> $GITHUB_OUTPUT
+            echo "❌ No frontend changes detected"
+          fi
+          
+          echo "Changed files:"
+          git diff --name-only HEAD~1 HEAD
 
   # ==================================================
   # バックエンドデプロイジョブ
